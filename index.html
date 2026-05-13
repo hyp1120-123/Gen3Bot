@@ -6,20 +6,22 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <title>三代交易系統</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
  
     :root {
-      --bg:       #0a0e1a;
-      --panel:    #111827;
-      --border:   #1e2d45;
-      --accent:   #00d4aa;
-      --accent2:  #ff6b6b;
-      --gold:     #f59e0b;
-      --text:     #e2e8f0;
-      --muted:    #64748b;
-      --green:    #10b981;
-      --red:      #ef4444;
-      --blue:     #3b82f6;
+      --bg:      #080d17;
+      --panel:   #0f1724;
+      --panel2:  #141e2e;
+      --border:  #1a2640;
+      --accent:  #00e5c4;
+      --accent2: #ff5370;
+      --gold:    #ffb300;
+      --text:    #dde3f0;
+      --muted:   #4a6080;
+      --green:   #00c896;
+      --red:     #ff4560;
+      --blue:    #4da6ff;
+      --purple:  #a78bfa;
     }
  
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -30,672 +32,780 @@
       font-family: 'Noto Sans TC', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
+      font-size: 14px;
     }
  
-    /* ── 頂部狀態列 ── */
+    /* ── Topbar ── */
     .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg); z-index: 100;
     }
-    .topbar-logo {
-      font-family: 'Space Mono', monospace;
-      font-size: 13px;
-      color: var(--accent);
-      letter-spacing: 2px;
-    }
-    .topbar-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
+    .logo { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent); letter-spacing: 3px; }
+    .status-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+    .dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
  
-    /* ── 頁籤 ── */
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-      position: sticky;
-      top: 49px;
-      z-index: 99;
-    }
-    .tab {
-      flex: 1;
-      padding: 10px 4px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-      letter-spacing: 0.5px;
-    }
-    .tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
+    /* ── Tabs ── */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 45px; z-index: 99; }
+    .tab { flex: 1; padding: 10px 4px; text-align: center; font-size: 11px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
  
-    /* ── 頁面 ── */
-    .page { display: none; padding: 14px 14px 80px; }
+    /* ── Pages ── */
+    .page { display: none; padding: 12px 12px 90px; }
     .page.active { display: block; }
  
-    /* ── 卡片 ── */
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .card-title {
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
+    /* ── Cards ── */
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+    .card-title { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
  
-    /* ── 總覽數字 ── */
-    .overview-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .stat-box {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-    }
-    .stat-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
-    .stat-value { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; }
-    .stat-value.green { color: var(--green); }
-    .stat-value.red   { color: var(--red); }
-    .stat-value.gold  { color: var(--gold); }
-    .stat-value.blue  { color: var(--blue); }
-    .stat-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    /* ── Stat grid ── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+    .stat-label { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+    .stat-val { font-family: 'Space Mono', monospace; font-size: 19px; font-weight: 700; }
+    .stat-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+    .green { color: var(--green); } .red { color: var(--red); } .gold { color: var(--gold); } .blue { color: var(--blue); } .purple { color: var(--purple); }
  
-    /* ── 進度條 ── */
-    .progress-wrap { margin: 10px 0; }
-    .progress-label {
-      display: flex; justify-content: space-between;
-      font-size: 11px; color: var(--muted); margin-bottom: 5px;
+    /* ── BTC Banner ── */
+    .btc-banner {
+      background: var(--panel2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
     }
-    .progress-bar {
-      height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; border-radius: 3px;
-      background: linear-gradient(90deg, var(--accent), var(--blue));
-      transition: width 0.8s ease;
-    }
+    .btc-left { display: flex; align-items: center; gap: 10px; }
+    .btc-icon-wrap { font-size: 26px; }
+    .btc-price { font-family: 'Space Mono', monospace; font-size: 21px; font-weight: 700; color: var(--gold); }
+    .btc-name { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+    .btc-change { font-size: 13px; font-family: 'Space Mono', monospace; }
  
-    /* ── 持倉列表 ── */
-    .pos-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .pos-item:last-child { border-bottom: none; }
-    .pos-left { display: flex; align-items: center; gap: 10px; }
-    .pos-badge {
-      font-size: 10px; font-weight: 700;
-      padding: 2px 7px; border-radius: 4px;
-      font-family: 'Space Mono', monospace;
-    }
-    .pos-badge.long  { background: rgba(16,185,129,0.15); color: var(--green); }
-    .pos-badge.short { background: rgba(239,68,68,0.15);  color: var(--red); }
-    .pos-symbol { font-size: 13px; font-weight: 500; }
-    .pos-entry  { font-size: 10px; color: var(--muted); margin-top: 2px; }
-    .pos-pnl    { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; }
-    .pos-pnl.pos { color: var(--green); }
-    .pos-pnl.neg { color: var(--red); }
+    /* ── Candlestick Chart ── */
+    .chart-wrap { position: relative; height: 120px; margin: 8px 0; }
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
  
-    /* ── 按鈕 ── */
-    .btn {
-      display: flex; align-items: center; justify-content: center;
-      gap: 6px;
-      width: 100%; padding: 13px;
-      border-radius: 10px; border: none;
-      font-size: 14px; font-family: 'Noto Sans TC', sans-serif;
-      font-weight: 500; cursor: pointer;
-      transition: all 0.15s;
-      letter-spacing: 0.3px;
-    }
+    /* ── Progress bar ── */
+    .prog-wrap { margin: 8px 0; }
+    .prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+    .prog-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--blue)); transition: width 0.6s ease; }
+ 
+    /* ── Sliders ── */
+    .slider-wrap { margin: 10px 0; }
+    .slider-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 6px; }
+    .slider-val { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--accent); background: rgba(0,229,196,0.08); padding: 2px 8px; border-radius: 5px; }
+    input[type=range] { width: 100%; -webkit-appearance: none; appearance: none; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+ 
+    /* ── Direction selector ── */
+    .dir-sel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 10px 0; }
+    .dir-btn { padding: 9px 4px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'Noto Sans TC', sans-serif; }
+    .dir-btn.sel-long  { border-color: var(--green);  background: rgba(0,200,150,0.1);  color: var(--green); }
+    .dir-btn.sel-both  { border-color: var(--accent); background: rgba(0,229,196,0.1); color: var(--accent); }
+    .dir-btn.sel-short { border-color: var(--red);    background: rgba(255,69,96,0.1);  color: var(--red); }
+ 
+    /* ── Buttons ── */
+    .btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 13px; font-family: 'Noto Sans TC', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.15s; }
     .btn:active { transform: scale(0.97); }
-    .btn-accent  { background: var(--accent);  color: #0a0e1a; }
-    .btn-danger  { background: var(--red);     color: #fff; }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    .btn-outline:active { background: var(--panel); }
- 
-    .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-green  { background: var(--green);  color: #051a14; }
+    .btn-red    { background: var(--red);    color: #fff; }
+    .btn-accent { background: var(--accent); color: #071714; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:active { background: var(--panel2); }
+    .btn-gold { background: var(--gold); color: #1a0e00; }
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; }
     .btn-row .btn { flex: 1; }
  
-    /* ── 方向選擇 ── */
-    .dir-selector {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px; margin-bottom: 10px;
-    }
-    .dir-btn {
-      padding: 10px 4px; border-radius: 8px;
-      border: 1px solid var(--border);
-      background: transparent; color: var(--muted);
-      font-size: 12px; cursor: pointer;
-      transition: all 0.2s; text-align: center;
-    }
-    .dir-btn.active-long  { border-color: var(--green); background: rgba(16,185,129,0.12); color: var(--green); }
-    .dir-btn.active-both  { border-color: var(--accent); background: rgba(0,212,170,0.12); color: var(--accent); }
-    .dir-btn.active-short { border-color: var(--red);   background: rgba(239,68,68,0.12); color: var(--red); }
- 
-    /* ── 設定 row ── */
-    .set-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 0; border-bottom: 1px solid var(--border);
-    }
-    .set-row:last-child { border-bottom: none; }
-    .set-label { font-size: 13px; }
-    .set-sub   { font-size: 10px; color: var(--muted); margin-top: 2px; }
-    .set-val   {
-      font-family: 'Space Mono', monospace;
-      font-size: 13px; color: var(--accent);
-      background: rgba(0,212,170,0.08);
-      padding: 4px 10px; border-radius: 6px;
-      cursor: pointer; border: 1px solid rgba(0,212,170,0.2);
-    }
- 
-    /* ── 切換開關 ── */
-    .toggle {
-      width: 44px; height: 24px; border-radius: 12px;
-      background: var(--border); position: relative;
-      cursor: pointer; transition: background 0.2s;
-    }
+    /* ── Toggle ── */
+    .toggle-wrap { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .toggle-wrap:last-child { border-bottom: none; }
+    .toggle-info { }
+    .toggle-label { font-size: 13px; }
+    .toggle-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .toggle { width: 42px; height: 23px; border-radius: 12px; background: var(--border); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
     .toggle.on { background: var(--accent); }
-    .toggle::after {
-      content: '';
-      position: absolute; top: 3px; left: 3px;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: #fff; transition: left 0.2s;
-    }
-    .toggle.on::after { left: 23px; }
+    .toggle::after { content:''; position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: left 0.2s; }
+    .toggle.on::after { left: 22px; }
  
-    /* ── 訊號項目 ── */
-    .signal-item {
-      padding: 12px 0; border-bottom: 1px solid var(--border);
-    }
-    .signal-item:last-child { border-bottom: none; }
-    .signal-top {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 6px;
-    }
-    .signal-sym { font-weight: 700; font-size: 14px; }
-    .signal-time { font-size: 10px; color: var(--muted); }
-    .signal-body { display: flex; gap: 16px; }
-    .signal-col { flex: 1; }
-    .signal-kv  { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
-    .signal-kv span { color: var(--text); font-family: 'Space Mono', monospace; }
-    .prob-bar {
-      height: 3px; background: var(--border); border-radius: 2px;
-      margin-top: 8px; overflow: hidden;
-    }
-    .prob-fill {
-      height: 100%; border-radius: 2px;
-      background: linear-gradient(90deg, var(--gold), var(--green));
-    }
+    /* ── Position items ── */
+    .pos-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .pos-item:last-child { border-bottom: none; }
+    .pos-left { display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: 'Space Mono', monospace; }
+    .badge-long  { background: rgba(0,200,150,0.15); color: var(--green); }
+    .badge-short { background: rgba(255,69,96,0.15);  color: var(--red); }
+    .pos-sym { font-size: 13px; font-weight: 500; }
+    .pos-info { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .pos-pnl { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; }
+    .pos-close-btn { font-size: 10px; color: var(--muted); border: 1px solid var(--border); background: transparent; padding: 4px 8px; border-radius: 5px; cursor: pointer; margin-top: 3px; }
+    .pos-close-btn:active { background: var(--red); color: #fff; border-color: var(--red); }
  
-    /* ── 底部導航 ── */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--panel);
-      border-top: 1px solid var(--border);
-      display: flex;
-      padding-bottom: env(safe-area-inset-bottom, 0);
-      z-index: 200;
+    /* ── Signal items ── */
+    .sig-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .sig-item:last-child { border-bottom: none; }
+    .sig-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .sig-sym { font-size: 14px; font-weight: 700; }
+    .sig-time { font-size: 10px; color: var(--muted); }
+    .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .sig-kv { font-size: 11px; color: var(--muted); }
+    .sig-kv span { color: var(--text); font-family: 'Space Mono', monospace; }
+    .prob-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .prob-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--gold), var(--green)); }
+    .sig-action-btn { font-size: 11px; padding: 4px 10px; border-radius: 5px; border: none; cursor: pointer; margin-top: 8px; font-family: 'Noto Sans TC', sans-serif; }
+    .sig-action-btn.open-long  { background: rgba(0,200,150,0.2); color: var(--green); }
+    .sig-action-btn.open-short { background: rgba(255,69,96,0.2);  color: var(--red); }
+ 
+    /* ── Open order form ── */
+    .order-section { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+    .order-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .order-tab { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; text-align: center; font-family: 'Noto Sans TC', sans-serif; }
+    .order-tab.long-active  { background: rgba(0,200,150,0.15); color: var(--green); border-color: var(--green); }
+    .order-tab.short-active { background: rgba(255,69,96,0.15);  color: var(--red);   border-color: var(--red); }
+ 
+    /* ── PnL Flash ── */
+    @keyframes flash-green { 0%{background:rgba(0,200,150,0.3)} 100%{background:transparent} }
+    @keyframes flash-red   { 0%{background:rgba(255,69,96,0.3)}  100%{background:transparent} }
+    .flash-green { animation: flash-green 0.6s ease; }
+    .flash-red   { animation: flash-red   0.6s ease; }
+ 
+    /* ── Signal notify popup ── */
+    .notify {
+      position: fixed; top: 52px; left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: var(--panel); border: 1px solid var(--accent); border-radius: 12px;
+      padding: 10px 16px; min-width: 220px; z-index: 500;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1); box-shadow: 0 4px 24px rgba(0,0,0,0.5);
     }
-    .nav-item {
-      flex: 1; padding: 10px 4px 8px;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 3px;
-      cursor: pointer; transition: color 0.2s;
-      color: var(--muted); font-size: 10px;
-    }
-    .nav-item.active { color: var(--accent); }
-    .nav-icon { font-size: 20px; }
+    .notify.show { transform: translateX(-50%) translateY(0); }
+    .notify-title { font-size: 11px; color: var(--accent); margin-bottom: 4px; }
+    .notify-body { font-size: 13px; font-weight: 500; }
+    .notify-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
  
     /* ── Toast ── */
     .toast {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--panel); border: 1px solid var(--accent);
-      color: var(--accent); padding: 10px 20px; border-radius: 20px;
-      font-size: 13px; opacity: 0; transition: all 0.3s; pointer-events: none;
-      white-space: nowrap; z-index: 300;
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(16px);
+      background: var(--panel); border: 1px solid var(--border); color: var(--text);
+      padding: 9px 18px; border-radius: 20px; font-size: 12px; opacity: 0;
+      transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 600;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
  
-    /* ── BTC 價格 banner ── */
-    .btc-banner {
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel);
+      border-top: 1px solid var(--border); display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0); z-index: 200;
     }
-    .btc-left { display: flex; align-items: center; gap: 10px; }
-    .btc-icon { font-size: 28px; }
-    .btc-name { font-size: 11px; color: var(--muted); }
-    .btc-price {
-      font-family: 'Space Mono', monospace;
-      font-size: 22px; font-weight: 700; color: var(--gold);
-    }
-    .btc-change { font-size: 12px; }
-    .btc-change.pos { color: var(--green); }
-    .btc-change.neg { color: var(--red); }
+    .nav-item { flex: 1; padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 10px; transition: color 0.2s; }
+    .nav-item.active { color: var(--accent); }
+    .nav-icon { font-size: 18px; }
  
-    /* ── 模擬更新閃爍 ── */
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    .live { animation: blink 1.5s infinite; color: var(--accent); font-size: 10px; }
+    /* ── Set row ── */
+    .set-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .set-row:last-child { border-bottom: none; }
+    .set-label { font-size: 13px; }
+    .set-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .set-chip { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent); background: rgba(0,229,196,0.08); border: 1px solid rgba(0,229,196,0.2); padding: 4px 10px; border-radius: 6px; }
+ 
+    /* ── Pnl log ── */
+    .pnl-log { font-family: 'Space Mono', monospace; font-size: 12px; margin-top: 10px; max-height: 120px; overflow-y: auto; }
+    .pnl-row { padding: 4px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .pnl-row:last-child { border-bottom: none; }
+    .scroll-note { text-align: center; font-size: 10px; color: var(--muted); padding: 6px; }
   </style>
 </head>
 <body>
  
-<!-- 頂部狀態列 -->
+<!-- Signal notify -->
+<div class="notify" id="notify">
+  <div class="notify-title">💡 新訊號到來</div>
+  <div class="notify-body" id="notify-body">SOLUSDT Long</div>
+  <div class="notify-sub" id="notify-sub">機率 75% · 分數 4/6</div>
+</div>
+ 
+<!-- Topbar -->
 <div class="topbar">
-  <div class="topbar-logo">GEN3BOT</div>
-  <div class="topbar-status">
-    <div class="dot"></div>
-    <span>系統運行中</span>
-    <span class="live">● LIVE</span>
+  <div class="logo">GEN3BOT</div>
+  <div class="status-row">
+    <div class="dot-live"></div>
+    <span id="top-status">模擬模式</span>
   </div>
 </div>
  
-<!-- 頁籤 -->
+<!-- Tabs -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview')">總覽</div>
+  <div class="tab" onclick="switchTab('trade')">開單</div>
   <div class="tab" onclick="switchTab('positions')">持倉</div>
   <div class="tab" onclick="switchTab('signals')">訊號</div>
   <div class="tab" onclick="switchTab('settings')">設定</div>
 </div>
  
-<!-- ═══════════════════════════════ 總覽 ═══════════════════════════════ -->
+<!-- ════ 總覽 ════ -->
 <div id="page-overview" class="page active">
  
-  <!-- BTC 價格 -->
+  <!-- BTC Banner -->
   <div class="btc-banner">
     <div class="btc-left">
-      <div class="btc-icon">₿</div>
+      <div class="btc-icon-wrap">₿</div>
       <div>
-        <div class="btc-name">BITCOIN</div>
+        <div class="btc-name">BTC / USDT</div>
         <div class="btc-price" id="btc-price">103,500</div>
       </div>
     </div>
-    <div>
-      <div class="btc-change pos" id="btc-change">▲ +2.34%</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:3px;text-align:right">24h</div>
+    <div style="text-align:right">
+      <div class="btc-change green" id="btc-chg">▲ +2.34%</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">今日 24h</div>
     </div>
   </div>
  
-  <!-- 統計數字 -->
-  <div class="overview-grid">
-    <div class="stat-box">
-      <div class="stat-label">帳戶本金</div>
-      <div class="stat-value gold">55.0U</div>
-      <div class="stat-sub">合約帳戶</div>
+  <!-- Mini chart -->
+  <div class="card" style="padding:12px">
+    <div class="card-title">BTC 走勢（模擬）</div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+ 
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="stat-label">模擬本金</div>
+      <div class="stat-val gold" id="balance">1,000.00</div>
+      <div class="stat-sub">USDT</div>
     </div>
-    <div class="stat-box">
+    <div class="stat">
       <div class="stat-label">未實現盈虧</div>
-      <div class="stat-value green" id="unrealized">+0.00U</div>
-      <div class="stat-sub">浮盈</div>
+      <div class="stat-val green" id="unrealized">+0.00</div>
+      <div class="stat-sub">浮盈 USDT</div>
     </div>
-    <div class="stat-box">
+    <div class="stat">
       <div class="stat-label">今日已實現</div>
-      <div class="stat-value blue" id="realized">+0.00U</div>
+      <div class="stat-val blue" id="realized">+0.00</div>
       <div class="stat-sub">已結算</div>
     </div>
-    <div class="stat-box">
+    <div class="stat">
       <div class="stat-label">持倉數</div>
-      <div class="stat-value" id="pos-count">0 / 10</div>
+      <div class="stat-val" id="pos-count-stat">0 / 10</div>
       <div class="stat-sub">最大10倉</div>
     </div>
   </div>
  
-  <!-- 持倉使用率 -->
+  <!-- 持倉率 -->
   <div class="card">
     <div class="card-title">倉位使用率</div>
-    <div class="progress-wrap">
-      <div class="progress-label">
-        <span>已使用</span>
-        <span id="pos-usage">0 / 10 倉位</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="pos-bar" style="width:0%"></div>
-      </div>
+    <div class="prog-wrap">
+      <div class="prog-label"><span>持倉</span><span id="pos-prog-label">0 / 10</span></div>
+      <div class="prog-track"><div class="prog-fill" id="pos-prog-fill" style="width:0%"></div></div>
     </div>
-    <div class="progress-wrap">
-      <div class="progress-label">
-        <span>保證金使用率</span>
-        <span id="margin-usage">0 / 50U</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="margin-bar" style="width:0%; background: linear-gradient(90deg, var(--gold), var(--red));"></div>
-      </div>
+    <div class="prog-wrap">
+      <div class="prog-label"><span>保證金</span><span id="margin-prog-label">0 / 100U</span></div>
+      <div class="prog-track"><div class="prog-fill" id="margin-prog-fill" style="width:0%; background:linear-gradient(90deg,var(--gold),var(--red))"></div></div>
     </div>
   </div>
  
-  <!-- 快速操作 -->
+  <!-- 盈虧記錄 -->
   <div class="card">
-    <div class="card-title">快速操作</div>
-    <div class="btn-row">
-      <button class="btn btn-accent" onclick="showToast('📊 正在查詢餘額...')">💰 查餘額</button>
-      <button class="btn btn-outline" onclick="showToast('📋 正在載入持倉...')">📋 看持倉</button>
-    </div>
-    <div class="btn-row" style="margin-top:8px">
-      <button class="btn btn-outline" onclick="showToast('😱 恐懼貪婪指數：62 (貪婪)')">😱 FNG指數</button>
-      <button class="btn btn-outline" onclick="showToast('🌐 IP：建設中')">🌐 查IP</button>
+    <div class="card-title">交易記錄</div>
+    <div class="pnl-log" id="pnl-log">
+      <div class="scroll-note">還沒有交易紀錄</div>
     </div>
   </div>
  
+  <!-- 隨機訊號按鈕 -->
+  <button class="btn btn-accent" onclick="triggerRandomSignal()" style="margin-bottom:8px">⚡ 模擬收到新訊號</button>
+  <button class="btn btn-outline" onclick="showToast('功能建設中，敬請期待')">📊 查看詳細統計</button>
 </div>
  
-<!-- ═══════════════════════════════ 持倉 ═══════════════════════════════ -->
+<!-- ════ 開單 ════ -->
+<div id="page-trade" class="page">
+  <div class="order-section">
+    <div class="order-tabs">
+      <button class="order-tab long-active" id="order-long-btn" onclick="setOrderSide('long')">做多 Long</button>
+      <button class="order-tab" id="order-short-btn" onclick="setOrderSide('short')">做空 Short</button>
+    </div>
+ 
+    <!-- 幣種選擇 -->
+    <div class="slider-wrap">
+      <div class="slider-label"><span>幣種</span>
+        <select id="sym-select" style="background:var(--panel);color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:12px;font-family:'Space Mono',monospace;">
+          <option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option>
+          <option>BNBUSDT</option><option>DOGEUSDT</option><option>AVAXUSDT</option>
+          <option>ADAUSDT</option><option>XRPUSDT</option><option>LINKUSDT</option>
+        </select>
+      </div>
+    </div>
+ 
+    <!-- 槓桿 -->
+    <div class="slider-wrap">
+      <div class="slider-label"><span>槓桿倍數</span><span class="slider-val" id="lev-val">10x</span></div>
+      <input type="range" min="1" max="20" value="10" step="1" id="lev-slider" oninput="document.getElementById('lev-val').textContent=this.value+'x'">
+    </div>
+ 
+    <!-- 保證金 -->
+    <div class="slider-wrap">
+      <div class="slider-label"><span>保證金</span><span class="slider-val" id="margin-val">10U</span></div>
+      <input type="range" min="1" max="100" value="10" step="1" id="margin-slider" oninput="updateMarginSlider(this.value)">
+    </div>
+ 
+    <!-- 進場/SL/TP 顯示 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
+      <div class="stat" style="padding:10px">
+        <div class="stat-label">模擬進場價</div>
+        <div class="stat-val" id="sim-entry" style="font-size:15px;color:var(--text)">103,500</div>
+      </div>
+      <div class="stat" style="padding:10px">
+        <div class="stat-label">倉位大小</div>
+        <div class="stat-val blue" id="sim-notional" style="font-size:15px">100U</div>
+      </div>
+      <div class="stat" style="padding:10px">
+        <div class="stat-label">TP1 目標</div>
+        <div class="stat-val green" id="sim-tp1" style="font-size:15px">105,090</div>
+      </div>
+      <div class="stat" style="padding:10px">
+        <div class="stat-label">止損</div>
+        <div class="stat-val red" id="sim-sl" style="font-size:15px">101,430</div>
+      </div>
+    </div>
+ 
+    <!-- 開單按鈕 -->
+    <button class="btn btn-green" id="order-execute-btn" onclick="executeSimOrder()">📈 開 Long 單（模擬）</button>
+    <div style="text-align:center;font-size:10px;color:var(--muted);margin-top:8px">這是模擬交易，不會動用真實資金</div>
+  </div>
+</div>
+ 
+<!-- ════ 持倉 ════ -->
 <div id="page-positions" class="page">
   <div class="card">
-    <div class="card-title">當前持倉</div>
-    <div id="positions-list">
-      <!-- 範例資料（之後換成真實數據） -->
-      <div class="pos-item">
-        <div class="pos-left">
-          <div class="pos-badge long">LONG</div>
-          <div>
-            <div class="pos-symbol">SOLUSDT</div>
-            <div class="pos-entry">進場 148.52 · 槓桿 10x</div>
-          </div>
-        </div>
-        <div>
-          <div class="pos-pnl pos">+1.24U</div>
-          <div style="font-size:10px;color:var(--muted);text-align:right">+0.84%</div>
-        </div>
-      </div>
-      <div class="pos-item">
-        <div class="pos-left">
-          <div class="pos-badge long">LONG</div>
-          <div>
-            <div class="pos-symbol">BTCUSDT</div>
-            <div class="pos-entry">進場 103,200 · 槓桿 10x</div>
-          </div>
-        </div>
-        <div>
-          <div class="pos-pnl pos">+0.87U</div>
-          <div style="font-size:10px;color:var(--muted);text-align:right">+0.29%</div>
-        </div>
-      </div>
-      <div class="pos-item">
-        <div class="pos-left">
-          <div class="pos-badge short">SHORT</div>
-          <div>
-            <div class="pos-symbol">ETHUSDT</div>
-            <div class="pos-entry">進場 2,318.40 · 槓桿 10x</div>
-          </div>
-        </div>
-        <div>
-          <div class="pos-pnl neg">-0.43U</div>
-          <div style="font-size:10px;color:var(--muted);text-align:right">-0.19%</div>
-        </div>
-      </div>
-    </div>
-    <div style="text-align:center;padding-top:12px;color:var(--muted);font-size:11px">
-      以上為範例數據，連接後顯示真實持倉
+    <div class="card-title">模擬持倉</div>
+    <div id="pos-list">
+      <div class="scroll-note" style="padding:20px 0">目前無持倉，去「開單」頁開一筆試試！</div>
     </div>
   </div>
- 
-  <button class="btn btn-outline" onclick="showToast('🔄 正在刷新持倉...')">🔄 刷新持倉</button>
+  <button class="btn btn-outline" onclick="closeAllPositions()" id="close-all-btn" style="display:none">🚨 全部平倉</button>
 </div>
  
-<!-- ═══════════════════════════════ 訊號 ═══════════════════════════════ -->
+<!-- ════ 訊號 ════ -->
 <div id="page-signals" class="page">
   <div class="card">
-    <div class="card-title">最新訊號</div>
- 
-    <div class="signal-item">
-      <div class="signal-top">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="pos-badge long">LONG</div>
-          <div class="signal-sym">SOLUSDT</div>
-        </div>
-        <div class="signal-time">今天 14:23</div>
-      </div>
-      <div class="signal-body">
-        <div class="signal-col">
-          <div class="signal-kv">進場 <span>148.52</span></div>
-          <div class="signal-kv">TP1 <span style="color:var(--green)">151.20</span></div>
-          <div class="signal-kv">TP2 <span style="color:var(--green)">154.80</span></div>
-          <div class="signal-kv">SL <span style="color:var(--red)">145.80</span></div>
-        </div>
-        <div class="signal-col">
-          <div class="signal-kv">機率 <span style="color:var(--gold)">75%</span></div>
-          <div class="signal-kv">分數 <span>4/6</span></div>
-          <div class="signal-kv">相關 <span>0.856</span></div>
-          <div class="signal-kv">槓桿 <span>10x</span></div>
-        </div>
-      </div>
-      <div class="prob-bar"><div class="prob-fill" style="width:75%"></div></div>
-    </div>
- 
-    <div class="signal-item">
-      <div class="signal-top">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="pos-badge short">SHORT</div>
-          <div class="signal-sym">ETHUSDT</div>
-        </div>
-        <div class="signal-time">今天 13:47</div>
-      </div>
-      <div class="signal-body">
-        <div class="signal-col">
-          <div class="signal-kv">進場 <span>2318.40</span></div>
-          <div class="signal-kv">TP1 <span style="color:var(--green)">2285.00</span></div>
-          <div class="signal-kv">TP2 <span style="color:var(--green)">2250.00</span></div>
-          <div class="signal-kv">SL <span style="color:var(--red)">2355.00</span></div>
-        </div>
-        <div class="signal-col">
-          <div class="signal-kv">機率 <span style="color:var(--gold)">70%</span></div>
-          <div class="signal-kv">分數 <span>3/6</span></div>
-          <div class="signal-kv">相關 <span>0.923</span></div>
-          <div class="signal-kv">槓桿 <span>10x</span></div>
-        </div>
-      </div>
-      <div class="prob-bar"><div class="prob-fill" style="width:70%"></div></div>
-    </div>
- 
-    <div style="text-align:center;padding-top:12px;color:var(--muted);font-size:11px">
-      以上為範例數據，連接後顯示真實訊號
+    <div class="card-title">模擬訊號記錄</div>
+    <div id="signal-list">
+      <div class="scroll-note" style="padding:20px 0">按「總覽」頁的「模擬收到新訊號」按鈕產生訊號</div>
     </div>
   </div>
+  <button class="btn btn-accent" onclick="triggerRandomSignal()">⚡ 產生隨機訊號</button>
 </div>
  
-<!-- ═══════════════════════════════ 設定 ═══════════════════════════════ -->
+<!-- ════ 設定 ════ -->
 <div id="page-settings" class="page">
  
-  <!-- 交易方向 -->
   <div class="card">
     <div class="card-title">開單方向</div>
-    <div class="dir-selector">
-      <div class="dir-btn" onclick="setDir('long')" id="dir-long">🟢 只做多</div>
-      <div class="dir-btn active-both" onclick="setDir('both')" id="dir-both">⚡ 多空</div>
-      <div class="dir-btn" onclick="setDir('short')" id="dir-short">🔴 只做空</div>
+    <div class="dir-sel">
+      <button class="dir-btn sel-long" onclick="setDir('long')" id="dir-long">🟢 只做多</button>
+      <button class="dir-btn" onclick="setDir('both')" id="dir-both">⚡ 多空</button>
+      <button class="dir-btn" onclick="setDir('short')" id="dir-short">🔴 只做空</button>
     </div>
   </div>
  
-  <!-- 交易參數 -->
   <div class="card">
     <div class="card-title">交易參數</div>
     <div class="set-row">
-      <div>
-        <div class="set-label">槓桿倍數</div>
-        <div class="set-sub">目前設定</div>
-      </div>
-      <div class="set-val" onclick="showToast('⚙️ 槓桿設定請至 TG 指令操作')">10x</div>
+      <div><div class="set-label">預設槓桿</div><div class="set-sub">開單預設倍數</div></div>
+      <div class="set-chip" id="cfg-lev">10x</div>
     </div>
     <div class="set-row">
-      <div>
-        <div class="set-label">每單保證金</div>
-        <div class="set-sub">固定金額</div>
-      </div>
-      <div class="set-val" onclick="showToast('⚙️ 保證金設定請至 TG 指令操作')">5U</div>
+      <div><div class="set-label">預設保證金</div><div class="set-sub">每單金額</div></div>
+      <div class="set-chip" id="cfg-margin">10U</div>
     </div>
     <div class="set-row">
-      <div>
-        <div class="set-label">出場模式</div>
-        <div class="set-sub">TP12 = 半倉TP1 + 半倉TP2</div>
-      </div>
-      <div class="set-val" onclick="showToast('⚙️ 模式設定請至 TG 指令操作')">TP12</div>
-    </div>
-    <div class="set-row">
-      <div>
-        <div class="set-label">最大持倉數</div>
-        <div class="set-sub">同時開倉上限</div>
-      </div>
-      <div class="set-val">10</div>
+      <div><div class="set-label">出場模式</div><div class="set-sub">TP12 = 半倉TP1 + 半倉TP2</div></div>
+      <div class="set-chip">TP12</div>
     </div>
   </div>
  
-  <!-- 開關 -->
   <div class="card">
     <div class="card-title">系統開關</div>
-    <div class="set-row">
-      <div>
-        <div class="set-label">自動交易</div>
-        <div class="set-sub">開啟後自動執行訊號</div>
-      </div>
-      <div class="toggle" id="toggle-trade" onclick="toggleSwitch('trade')"></div>
+    <div class="toggle-wrap">
+      <div class="toggle-info"><div class="toggle-label">自動交易</div><div class="toggle-sub">開啟後自動執行訊號</div></div>
+      <div class="toggle" id="tog-trade" onclick="toggleSetting('trade')"></div>
     </div>
-    <div class="set-row">
-      <div>
-        <div class="set-label">訊號記錄</div>
-        <div class="set-sub">自動寫入 CSV</div>
-      </div>
-      <div class="toggle on" id="toggle-signal" onclick="toggleSwitch('signal')"></div>
+    <div class="toggle-wrap">
+      <div class="toggle-info"><div class="toggle-label">訊號記錄</div><div class="toggle-sub">自動寫入 CSV</div></div>
+      <div class="toggle on" id="tog-signal" onclick="toggleSetting('signal')"></div>
     </div>
-    <div class="set-row">
-      <div>
-        <div class="set-label">訊號反指標</div>
-        <div class="set-sub">空單反向做多</div>
-      </div>
-      <div class="toggle on" id="toggle-reverse" onclick="toggleSwitch('reverse')"></div>
+    <div class="toggle-wrap">
+      <div class="toggle-info"><div class="toggle-label">空單反向</div><div class="toggle-sub">空單訊號反向做多</div></div>
+      <div class="toggle on" id="tog-reverse" onclick="toggleSetting('reverse')"></div>
+    </div>
+    <div class="toggle-wrap">
+      <div class="toggle-info"><div class="toggle-label">BTC 大方向篩選</div><div class="toggle-sub">順勢才開單</div></div>
+      <div class="toggle on" id="tog-btc" onclick="toggleSetting('btc')"></div>
     </div>
   </div>
  
-  <div style="text-align:center;color:var(--muted);font-size:11px;padding:8px 0 20px">
-    設定變更請至 TG 指令 /tradeset 操作<br>此頁面僅供查看
+  <div style="text-align:center;color:var(--muted);font-size:11px;padding:8px 0">
+    設定僅供模擬參考，真實設定請用 /tradeset
   </div>
- 
 </div>
  
-<!-- 底部導航 -->
+<!-- Bottom nav -->
 <div class="bottom-nav">
-  <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')">
-    <div class="nav-icon">📊</div>總覽
-  </div>
-  <div class="nav-item" id="nav-positions" onclick="switchTab('positions')">
-    <div class="nav-icon">📋</div>持倉
-  </div>
-  <div class="nav-item" id="nav-signals" onclick="switchTab('signals')">
-    <div class="nav-icon">💡</div>訊號
-  </div>
-  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
-    <div class="nav-icon">⚙️</div>設定
-  </div>
+  <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')"><div class="nav-icon">📊</div>總覽</div>
+  <div class="nav-item" id="nav-trade" onclick="switchTab('trade')"><div class="nav-icon">📈</div>開單</div>
+  <div class="nav-item" id="nav-positions" onclick="switchTab('positions')"><div class="nav-icon">📋</div>持倉</div>
+  <div class="nav-item" id="nav-signals" onclick="switchTab('signals')"><div class="nav-icon">💡</div>訊號</div>
+  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')"><div class="nav-icon">⚙️</div>設定</div>
 </div>
  
-<!-- Toast -->
 <div class="toast" id="toast"></div>
  
 <script>
-  // TG Web App 初始化
-  if (window.Telegram && window.Telegram.WebApp) {
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
-  }
+if (window.Telegram && window.Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
  
-  // ── 頁籤切換 ──
-  function switchTab(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('page-' + name).classList.add('active');
-    document.getElementById('nav-' + name).classList.add('active');
-    const tabs = ['overview','positions','signals','settings'];
-    document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
-  }
+// ── 狀態 ──
+let balance    = 1000;
+let realizedPnl = 0;
+let positions  = [];
+let signals    = [];
+let orderSide  = 'long';
+let dirMode    = 'long';
+let toggleStates = { trade: false, signal: true, reverse: true, btc: true };
  
-  // ── Toast ──
-  let toastTimer;
-  function showToast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
-  }
+const COINS = {
+  BTCUSDT:  { price: 103500, step: 50,   tp_pct: 0.015, sl_pct: 0.014 },
+  ETHUSDT:  { price: 2318,   step: 2,    tp_pct: 0.018, sl_pct: 0.016 },
+  SOLUSDT:  { price: 148.5,  step: 0.1,  tp_pct: 0.020, sl_pct: 0.018 },
+  BNBUSDT:  { price: 610,    step: 0.5,  tp_pct: 0.015, sl_pct: 0.013 },
+  DOGEUSDT: { price: 0.182,  step: 0.0001, tp_pct: 0.022, sl_pct: 0.019 },
+  AVAXUSDT: { price: 22.5,   step: 0.01, tp_pct: 0.020, sl_pct: 0.018 },
+  ADAUSDT:  { price: 0.685,  step: 0.001, tp_pct: 0.020, sl_pct: 0.018 },
+  XRPUSDT:  { price: 2.15,   step: 0.001, tp_pct: 0.018, sl_pct: 0.016 },
+  LINKUSDT: { price: 11.8,   step: 0.01, tp_pct: 0.022, sl_pct: 0.019 },
+};
  
-  // ── 方向選擇 ──
-  let currentDir = 'both';
-  function setDir(dir) {
-    currentDir = dir;
-    document.getElementById('dir-long').className  = 'dir-btn';
-    document.getElementById('dir-both').className  = 'dir-btn';
-    document.getElementById('dir-short').className = 'dir-btn';
-    if (dir === 'long')  document.getElementById('dir-long').className  = 'dir-btn active-long';
-    if (dir === 'both')  document.getElementById('dir-both').className  = 'dir-btn active-both';
-    if (dir === 'short') document.getElementById('dir-short').className = 'dir-btn active-short';
-    const label = dir === 'long' ? '只開多單' : dir === 'short' ? '只開空單' : '多空都開';
-    showToast('⚙️ 設定請至 TG /tradeset 操作');
-  }
+let currentSym = 'BTCUSDT';
+let coinPrices = {};
+Object.keys(COINS).forEach(k => { coinPrices[k] = COINS[k].price; });
  
-  // ── 開關 ──
-  const toggleStates = { trade: false, signal: true, reverse: true };
-  function toggleSwitch(name) {
-    toggleStates[name] = !toggleStates[name];
-    const el = document.getElementById('toggle-' + name);
-    el.classList.toggle('on', toggleStates[name]);
-    showToast('⚙️ 設定請至 TG /tradeset 操作');
-  }
+// ── Tab 切換 ──
+const tabs = ['overview','trade','positions','signals','settings'];
+function switchTab(name) {
+  tabs.forEach(t => {
+    document.getElementById('page-' + t).classList.toggle('active', t === name);
+    document.getElementById('nav-' + t).classList.toggle('active', t === name);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', tabs[i] === name));
+}
  
-  // ── 模擬 BTC 價格微動 ──
-  let btcBase = 103500;
-  setInterval(() => {
-    btcBase += (Math.random() - 0.5) * 200;
-    btcBase = Math.max(100000, Math.min(110000, btcBase));
-    document.getElementById('btc-price').textContent = Math.round(btcBase).toLocaleString();
-  }, 3000);
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+ 
+// ── Notify ──
+let notifyTimer;
+function showNotify(body, sub) {
+  const el = document.getElementById('notify');
+  document.getElementById('notify-body').textContent = body;
+  document.getElementById('notify-sub').textContent = sub;
+  el.classList.add('show');
+  clearTimeout(notifyTimer);
+  notifyTimer = setTimeout(() => el.classList.remove('show'), 4000);
+}
+ 
+// ── 模擬 BTC 走勢 ──
+let btcHistory = [];
+for (let i = 0; i < 40; i++) btcHistory.push(103000 + Math.sin(i * 0.3) * 800 + Math.random() * 400);
+let btcBase = btcHistory[btcHistory.length - 1];
+ 
+function drawChart() {
+  const canvas = document.getElementById('chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth; const H = canvas.offsetHeight;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+ 
+  const data = btcHistory.slice(-30);
+  const min = Math.min(...data) - 200;
+  const max = Math.max(...data) + 200;
+  const toY = v => H - ((v - min) / (max - min)) * H;
+  const toX = i => (i / (data.length - 1)) * W;
+ 
+  ctx.clearRect(0, 0, W, H);
+ 
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0,229,196,0.15)');
+  grad.addColorStop(1, 'rgba(0,229,196,0)');
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0]));
+  data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i), toY(v)); });
+  ctx.lineTo(toX(data.length - 1), H);
+  ctx.lineTo(0, H);
+  ctx.fillStyle = grad;
+  ctx.fill();
+ 
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0]));
+  data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i), toY(v)); });
+  ctx.strokeStyle = '#00e5c4';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+ 
+// ── 價格更新 ──
+function updatePrices() {
+  Object.keys(coinPrices).forEach(sym => {
+    const c = COINS[sym];
+    const change = (Math.random() - 0.495) * c.step * 3;
+    coinPrices[sym] = Math.max(c.price * 0.5, coinPrices[sym] + change);
+  });
+  btcBase = coinPrices['BTCUSDT'];
+  btcHistory.push(btcBase);
+  if (btcHistory.length > 60) btcHistory.shift();
+ 
+  const chgPct = ((btcBase - 103500) / 103500 * 100).toFixed(2);
+  const isPos = chgPct >= 0;
+  document.getElementById('btc-price').textContent = Math.round(btcBase).toLocaleString();
+  document.getElementById('btc-chg').textContent = (isPos ? '▲ +' : '▼ ') + chgPct + '%';
+  document.getElementById('btc-chg').className = 'btc-change ' + (isPos ? 'green' : 'red');
+ 
+  updateOrderPreview();
+  updatePositionsPnl();
+  drawChart();
+}
+ 
+// ── 開單頁 ──
+function setOrderSide(side) {
+  orderSide = side;
+  document.getElementById('order-long-btn').className  = 'order-tab' + (side === 'long'  ? ' long-active' : '');
+  document.getElementById('order-short-btn').className = 'order-tab' + (side === 'short' ? ' short-active' : '');
+  document.getElementById('order-execute-btn').className = side === 'long' ? 'btn btn-green' : 'btn btn-red';
+  document.getElementById('order-execute-btn').textContent = side === 'long' ? '📈 開 Long 單（模擬）' : '📉 開 Short 單（模擬）';
+  updateOrderPreview();
+}
+ 
+function updateMarginSlider(v) {
+  document.getElementById('margin-val').textContent = v + 'U';
+  updateOrderPreview();
+}
+ 
+function updateOrderPreview() {
+  currentSym = document.getElementById('sym-select').value;
+  const price = coinPrices[currentSym] || COINS[currentSym].price;
+  const lev   = parseInt(document.getElementById('lev-slider').value);
+  const margin = parseInt(document.getElementById('margin-slider').value);
+  const notional = margin * lev;
+  const c = COINS[currentSym];
+  const tp1 = orderSide === 'long' ? price * (1 + c.tp_pct) : price * (1 - c.tp_pct);
+  const sl  = orderSide === 'long' ? price * (1 - c.sl_pct) : price * (1 + c.sl_pct);
+ 
+  const fmt = v => v > 100 ? Math.round(v).toLocaleString() : v.toFixed(v < 1 ? 4 : 2);
+  document.getElementById('sim-entry').textContent   = fmt(price);
+  document.getElementById('sim-notional').textContent = notional + 'U';
+  document.getElementById('sim-tp1').textContent     = fmt(tp1);
+  document.getElementById('sim-sl').textContent      = fmt(sl);
+}
+ 
+function executeSimOrder() {
+  currentSym = document.getElementById('sym-select').value;
+  if (positions.find(p => p.sym === currentSym)) {
+    showToast('⚠️ 該幣種已有倉位');
+    return;
+  }
+  if (positions.length >= 10) { showToast('⚠️ 持倉已達上限 10'); return; }
+ 
+  const price  = coinPrices[currentSym];
+  const lev    = parseInt(document.getElementById('lev-slider').value);
+  const margin = parseInt(document.getElementById('margin-slider').value);
+  const c      = COINS[currentSym];
+  const tp1    = orderSide === 'long' ? price * (1 + c.tp_pct) : price * (1 - c.tp_pct);
+  const sl     = orderSide === 'long' ? price * (1 - c.sl_pct) : price * (1 + c.sl_pct);
+ 
+  positions.push({ sym: currentSym, side: orderSide, entry: price, lev, margin, tp1, sl, qty: (margin * lev) / price });
+  renderPositions();
+  updateStats();
+  showToast('✅ ' + currentSym + ' ' + (orderSide === 'long' ? 'Long' : 'Short') + ' 模擬開單成功');
+  switchTab('positions');
+}
+ 
+// ── 持倉 ──
+function renderPositions() {
+  const list = document.getElementById('pos-list');
+  const btn  = document.getElementById('close-all-btn');
+  if (positions.length === 0) {
+    list.innerHTML = '<div class="scroll-note" style="padding:20px 0">目前無持倉</div>';
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'block';
+  list.innerHTML = positions.map((p, i) => {
+    const cur = coinPrices[p.sym] || p.entry;
+    const pnl = p.side === 'long' ? (cur - p.entry) / p.entry * p.margin * p.lev : (p.entry - cur) / p.entry * p.margin * p.lev;
+    const pct = (pnl / p.margin * 100).toFixed(2);
+    const fmt = v => v > 100 ? Math.round(v).toLocaleString() : v.toFixed(v < 1 ? 4 : 2);
+    return `<div class="pos-item" id="pos-${i}">
+      <div class="pos-left">
+        <div class="badge badge-${p.side}">${p.side.toUpperCase()}</div>
+        <div>
+          <div class="pos-sym">${p.sym}</div>
+          <div class="pos-info">進場 ${fmt(p.entry)} · ${p.lev}x · ${p.margin}U</div>
+          <button class="pos-close-btn" onclick="closePosition(${i})">平倉</button>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="pos-pnl ${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(3)}U</div>
+        <div style="font-size:10px;color:var(--muted)">${pnl >= 0 ? '+' : ''}${pct}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+ 
+function closePosition(i) {
+  const p   = positions[i];
+  const cur = coinPrices[p.sym] || p.entry;
+  const pnl = p.side === 'long' ? (cur - p.entry) / p.entry * p.margin * p.lev : (p.entry - cur) / p.entry * p.margin * p.lev;
+  balance += p.margin + pnl;
+  realizedPnl += pnl;
+  addPnlLog(p.sym, p.side, pnl);
+  positions.splice(i, 1);
+  renderPositions();
+  updateStats();
+  showToast((pnl >= 0 ? '💰' : '💸') + ' 平倉 ' + (pnl >= 0 ? '+' : '') + pnl.toFixed(3) + 'U');
+}
+ 
+function closeAllPositions() {
+  [...positions].forEach((_, i) => closePosition(0));
+}
+ 
+function updatePositionsPnl() {
+  renderPositions();
+  let totalUnreal = 0;
+  positions.forEach(p => {
+    const cur = coinPrices[p.sym] || p.entry;
+    const pnl = p.side === 'long' ? (cur - p.entry) / p.entry * p.margin * p.lev : (p.entry - cur) / p.entry * p.margin * p.lev;
+    totalUnreal += pnl;
+  });
+  const unEl = document.getElementById('unrealized');
+  unEl.textContent = (totalUnreal >= 0 ? '+' : '') + totalUnreal.toFixed(3);
+  unEl.className = 'stat-val ' + (totalUnreal >= 0 ? 'green' : 'red');
+}
+ 
+function addPnlLog(sym, side, pnl) {
+  const log = document.getElementById('pnl-log');
+  const row = document.createElement('div');
+  row.className = 'pnl-row';
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  row.innerHTML = `<span style="color:var(--muted)">${t} ${sym}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${pnl.toFixed(3)}U</span>`;
+  if (log.querySelector('.scroll-note')) log.innerHTML = '';
+  log.insertBefore(row, log.firstChild);
+}
+ 
+// ── 統計更新 ──
+function updateStats() {
+  document.getElementById('balance').textContent = balance.toFixed(2);
+  document.getElementById('realized').textContent = (realizedPnl >= 0 ? '+' : '') + realizedPnl.toFixed(3);
+  document.getElementById('realized').className = 'stat-val ' + (realizedPnl >= 0 ? 'blue' : 'red');
+  document.getElementById('pos-count-stat').textContent = positions.length + ' / 10';
+  document.getElementById('pos-prog-label').textContent = positions.length + ' / 10';
+  document.getElementById('pos-prog-fill').style.width = (positions.length / 10 * 100) + '%';
+  const usedMargin = positions.reduce((a, p) => a + p.margin, 0);
+  document.getElementById('margin-prog-label').textContent = usedMargin + ' / 100U';
+  document.getElementById('margin-prog-fill').style.width = Math.min(usedMargin, 100) + '%';
+}
+ 
+// ── 隨機訊號 ──
+const SIGNAL_COINS = ['SOLUSDT','ETHUSDT','BTCUSDT','BNBUSDT','AVAXUSDT','ADAUSDT','LINKUSDT','DOGEUSDT'];
+const PROBS = [60,65,70,75,75,80];
+let sigSeq = 1;
+ 
+function triggerRandomSignal() {
+  const sym  = SIGNAL_COINS[Math.floor(Math.random() * SIGNAL_COINS.length)];
+  const side = Math.random() > 0.4 ? 'Long' : 'Short';
+  const prob = PROBS[Math.floor(Math.random() * PROBS.length)];
+  const score = Math.floor(Math.random() * 2) + 3;
+  const price = coinPrices[sym];
+  const c = COINS[sym] || { tp_pct: 0.018, sl_pct: 0.015 };
+  const tp1 = side === 'Long' ? price * (1 + c.tp_pct) : price * (1 - c.tp_pct);
+  const sl  = side === 'Long' ? price * (1 - c.sl_pct) : price * (1 + c.sl_pct);
+  const fmt = v => v > 100 ? Math.round(v).toLocaleString() : v.toFixed(v < 1 ? 4 : 2);
+  const id  = String(sigSeq++).padStart(3, '0');
+  const now = new Date();
+  const t   = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+ 
+  const sig = { id, sym, side, prob, score, price, tp1, sl, time: t };
+  signals.unshift(sig);
+  renderSignals();
+  showNotify(id + ' ' + sym + ' ' + side, '機率 ' + prob + '% · 分數 ' + score + '/6');
+  showToast('💡 新訊號：' + sym + ' ' + side);
+}
+ 
+function renderSignals() {
+  const list = document.getElementById('signal-list');
+  if (signals.length === 0) {
+    list.innerHTML = '<div class="scroll-note" style="padding:20px 0">按下方按鈕產生模擬訊號</div>';
+    return;
+  }
+  list.innerHTML = signals.slice(0, 8).map(s => {
+    const fmt = v => v > 100 ? Math.round(v).toLocaleString() : v.toFixed(v < 1 ? 4 : 2);
+    return `<div class="sig-item">
+      <div class="sig-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="badge badge-${s.side.toLowerCase()}">${s.side.toUpperCase()}</div>
+          <div class="sig-sym">${s.sym}</div>
+        </div>
+        <div class="sig-time">${s.time}</div>
+      </div>
+      <div class="sig-grid">
+        <div class="sig-kv">進場 <span>${fmt(s.price)}</span></div>
+        <div class="sig-kv">機率 <span style="color:var(--gold)">${s.prob}%</span></div>
+        <div class="sig-kv">TP1 <span style="color:var(--green)">${fmt(s.tp1)}</span></div>
+        <div class="sig-kv">分數 <span>${s.score}/6</span></div>
+        <div class="sig-kv">SL <span style="color:var(--red)">${fmt(s.sl)}</span></div>
+        <div class="sig-kv">編號 <span>${s.id}</span></div>
+      </div>
+      <div class="prob-bar"><div class="prob-fill" style="width:${s.prob}%"></div></div>
+      <button class="sig-action-btn open-${s.side.toLowerCase()}" onclick="openFromSignal('${s.sym}','${s.side.toLowerCase()}')">
+        按此開倉（模擬）
+      </button>
+    </div>`;
+  }).join('');
+}
+ 
+function openFromSignal(sym, side) {
+  document.getElementById('sym-select').value = sym;
+  setOrderSide(side);
+  switchTab('trade');
+  showToast('已切換至 ' + sym + ' ' + side.toUpperCase());
+}
+ 
+// ── 方向設定 ──
+function setDir(d) {
+  dirMode = d;
+  ['long','both','short'].forEach(x => {
+    document.getElementById('dir-' + x).className = 'dir-btn' + (x === d ? ' sel-' + d : '');
+  });
+  showToast('開單方向（模擬）：' + (d === 'long' ? '只做多' : d === 'short' ? '只做空' : '多空都開'));
+}
+ 
+// ── 開關 ──
+function toggleSetting(key) {
+  toggleStates[key] = !toggleStates[key];
+  document.getElementById('tog-' + key).classList.toggle('on', toggleStates[key]);
+  showToast(toggleStates[key] ? '✅ 已開啟（模擬）' : '⏸️ 已關閉（模擬）');
+}
+ 
+// ── 初始化 ──
+updateOrderPreview();
+updateStats();
+drawChart();
+document.getElementById('sym-select').addEventListener('change', updateOrderPreview);
+ 
+setInterval(updatePrices, 2000);
+setInterval(() => { if (Math.random() < 0.12) triggerRandomSignal(); }, 15000);
 </script>
 </body>
 </html>
