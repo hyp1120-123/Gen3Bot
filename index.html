@@ -2,27 +2,700 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <title>三代交易系統</title>
   <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: #1a1a2e;
-      color: white;
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+ 
+    :root {
+      --bg:       #0a0e1a;
+      --panel:    #111827;
+      --border:   #1e2d45;
+      --accent:   #00d4aa;
+      --accent2:  #ff6b6b;
+      --gold:     #f59e0b;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --green:    #10b981;
+      --red:      #ef4444;
+      --blue:     #3b82f6;
     }
-    h1 { font-size: 24px; }
-    p  { color: #aaa; }
+ 
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+ 
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans TC', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+ 
+    /* ── 頂部狀態列 ── */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .topbar-logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+ 
+    /* ── 頁籤 ── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 49px;
+      z-index: 99;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+ 
+    /* ── 頁面 ── */
+    .page { display: none; padding: 14px 14px 80px; }
+    .page.active { display: block; }
+ 
+    /* ── 卡片 ── */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+ 
+    /* ── 總覽數字 ── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .stat-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.red   { color: var(--red); }
+    .stat-value.gold  { color: var(--gold); }
+    .stat-value.blue  { color: var(--blue); }
+    .stat-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+ 
+    /* ── 進度條 ── */
+    .progress-wrap { margin: 10px 0; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--muted); margin-bottom: 5px;
+    }
+    .progress-bar {
+      height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--blue));
+      transition: width 0.8s ease;
+    }
+ 
+    /* ── 持倉列表 ── */
+    .pos-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .pos-item:last-child { border-bottom: none; }
+    .pos-left { display: flex; align-items: center; gap: 10px; }
+    .pos-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px;
+      font-family: 'Space Mono', monospace;
+    }
+    .pos-badge.long  { background: rgba(16,185,129,0.15); color: var(--green); }
+    .pos-badge.short { background: rgba(239,68,68,0.15);  color: var(--red); }
+    .pos-symbol { font-size: 13px; font-weight: 500; }
+    .pos-entry  { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .pos-pnl    { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; }
+    .pos-pnl.pos { color: var(--green); }
+    .pos-pnl.neg { color: var(--red); }
+ 
+    /* ── 按鈕 ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px;
+      width: 100%; padding: 13px;
+      border-radius: 10px; border: none;
+      font-size: 14px; font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 500; cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-accent  { background: var(--accent);  color: #0a0e1a; }
+    .btn-danger  { background: var(--red);     color: #fff; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:active { background: var(--panel); }
+ 
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-row .btn { flex: 1; }
+ 
+    /* ── 方向選擇 ── */
+    .dir-selector {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px; margin-bottom: 10px;
+    }
+    .dir-btn {
+      padding: 10px 4px; border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--muted);
+      font-size: 12px; cursor: pointer;
+      transition: all 0.2s; text-align: center;
+    }
+    .dir-btn.active-long  { border-color: var(--green); background: rgba(16,185,129,0.12); color: var(--green); }
+    .dir-btn.active-both  { border-color: var(--accent); background: rgba(0,212,170,0.12); color: var(--accent); }
+    .dir-btn.active-short { border-color: var(--red);   background: rgba(239,68,68,0.12); color: var(--red); }
+ 
+    /* ── 設定 row ── */
+    .set-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .set-row:last-child { border-bottom: none; }
+    .set-label { font-size: 13px; }
+    .set-sub   { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .set-val   {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px; color: var(--accent);
+      background: rgba(0,212,170,0.08);
+      padding: 4px 10px; border-radius: 6px;
+      cursor: pointer; border: 1px solid rgba(0,212,170,0.2);
+    }
+ 
+    /* ── 切換開關 ── */
+    .toggle {
+      width: 44px; height: 24px; border-radius: 12px;
+      background: var(--border); position: relative;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; transition: left 0.2s;
+    }
+    .toggle.on::after { left: 23px; }
+ 
+    /* ── 訊號項目 ── */
+    .signal-item {
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .signal-item:last-child { border-bottom: none; }
+    .signal-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+    .signal-sym { font-weight: 700; font-size: 14px; }
+    .signal-time { font-size: 10px; color: var(--muted); }
+    .signal-body { display: flex; gap: 16px; }
+    .signal-col { flex: 1; }
+    .signal-kv  { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    .signal-kv span { color: var(--text); font-family: 'Space Mono', monospace; }
+    .prob-bar {
+      height: 3px; background: var(--border); border-radius: 2px;
+      margin-top: 8px; overflow: hidden;
+    }
+    .prob-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--green));
+    }
+ 
+    /* ── 底部導航 ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      z-index: 200;
+    }
+    .nav-item {
+      flex: 1; padding: 10px 4px 8px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 3px;
+      cursor: pointer; transition: color 0.2s;
+      color: var(--muted); font-size: 10px;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-icon { font-size: 20px; }
+ 
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--panel); border: 1px solid var(--accent);
+      color: var(--accent); padding: 10px 20px; border-radius: 20px;
+      font-size: 13px; opacity: 0; transition: all 0.3s; pointer-events: none;
+      white-space: nowrap; z-index: 300;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+ 
+    /* ── BTC 價格 banner ── */
+    .btc-banner {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btc-left { display: flex; align-items: center; gap: 10px; }
+    .btc-icon { font-size: 28px; }
+    .btc-name { font-size: 11px; color: var(--muted); }
+    .btc-price {
+      font-family: 'Space Mono', monospace;
+      font-size: 22px; font-weight: 700; color: var(--gold);
+    }
+    .btc-change { font-size: 12px; }
+    .btc-change.pos { color: var(--green); }
+    .btc-change.neg { color: var(--red); }
+ 
+    /* ── 模擬更新閃爍 ── */
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .live { animation: blink 1.5s infinite; color: var(--accent); font-size: 10px; }
   </style>
 </head>
 <body>
-  <h1>🤖 三代交易系統</h1>
-  <p>功能建設中，敬請期待...</p>
+ 
+<!-- 頂部狀態列 -->
+<div class="topbar">
+  <div class="topbar-logo">GEN3BOT</div>
+  <div class="topbar-status">
+    <div class="dot"></div>
+    <span>系統運行中</span>
+    <span class="live">● LIVE</span>
+  </div>
+</div>
+ 
+<!-- 頁籤 -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">總覽</div>
+  <div class="tab" onclick="switchTab('positions')">持倉</div>
+  <div class="tab" onclick="switchTab('signals')">訊號</div>
+  <div class="tab" onclick="switchTab('settings')">設定</div>
+</div>
+ 
+<!-- ═══════════════════════════════ 總覽 ═══════════════════════════════ -->
+<div id="page-overview" class="page active">
+ 
+  <!-- BTC 價格 -->
+  <div class="btc-banner">
+    <div class="btc-left">
+      <div class="btc-icon">₿</div>
+      <div>
+        <div class="btc-name">BITCOIN</div>
+        <div class="btc-price" id="btc-price">103,500</div>
+      </div>
+    </div>
+    <div>
+      <div class="btc-change pos" id="btc-change">▲ +2.34%</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px;text-align:right">24h</div>
+    </div>
+  </div>
+ 
+  <!-- 統計數字 -->
+  <div class="overview-grid">
+    <div class="stat-box">
+      <div class="stat-label">帳戶本金</div>
+      <div class="stat-value gold">55.0U</div>
+      <div class="stat-sub">合約帳戶</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">未實現盈虧</div>
+      <div class="stat-value green" id="unrealized">+0.00U</div>
+      <div class="stat-sub">浮盈</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">今日已實現</div>
+      <div class="stat-value blue" id="realized">+0.00U</div>
+      <div class="stat-sub">已結算</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">持倉數</div>
+      <div class="stat-value" id="pos-count">0 / 10</div>
+      <div class="stat-sub">最大10倉</div>
+    </div>
+  </div>
+ 
+  <!-- 持倉使用率 -->
+  <div class="card">
+    <div class="card-title">倉位使用率</div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>已使用</span>
+        <span id="pos-usage">0 / 10 倉位</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="pos-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>保證金使用率</span>
+        <span id="margin-usage">0 / 50U</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="margin-bar" style="width:0%; background: linear-gradient(90deg, var(--gold), var(--red));"></div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- 快速操作 -->
+  <div class="card">
+    <div class="card-title">快速操作</div>
+    <div class="btn-row">
+      <button class="btn btn-accent" onclick="showToast('📊 正在查詢餘額...')">💰 查餘額</button>
+      <button class="btn btn-outline" onclick="showToast('📋 正在載入持倉...')">📋 看持倉</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-outline" onclick="showToast('😱 恐懼貪婪指數：62 (貪婪)')">😱 FNG指數</button>
+      <button class="btn btn-outline" onclick="showToast('🌐 IP：建設中')">🌐 查IP</button>
+    </div>
+  </div>
+ 
+</div>
+ 
+<!-- ═══════════════════════════════ 持倉 ═══════════════════════════════ -->
+<div id="page-positions" class="page">
+  <div class="card">
+    <div class="card-title">當前持倉</div>
+    <div id="positions-list">
+      <!-- 範例資料（之後換成真實數據） -->
+      <div class="pos-item">
+        <div class="pos-left">
+          <div class="pos-badge long">LONG</div>
+          <div>
+            <div class="pos-symbol">SOLUSDT</div>
+            <div class="pos-entry">進場 148.52 · 槓桿 10x</div>
+          </div>
+        </div>
+        <div>
+          <div class="pos-pnl pos">+1.24U</div>
+          <div style="font-size:10px;color:var(--muted);text-align:right">+0.84%</div>
+        </div>
+      </div>
+      <div class="pos-item">
+        <div class="pos-left">
+          <div class="pos-badge long">LONG</div>
+          <div>
+            <div class="pos-symbol">BTCUSDT</div>
+            <div class="pos-entry">進場 103,200 · 槓桿 10x</div>
+          </div>
+        </div>
+        <div>
+          <div class="pos-pnl pos">+0.87U</div>
+          <div style="font-size:10px;color:var(--muted);text-align:right">+0.29%</div>
+        </div>
+      </div>
+      <div class="pos-item">
+        <div class="pos-left">
+          <div class="pos-badge short">SHORT</div>
+          <div>
+            <div class="pos-symbol">ETHUSDT</div>
+            <div class="pos-entry">進場 2,318.40 · 槓桿 10x</div>
+          </div>
+        </div>
+        <div>
+          <div class="pos-pnl neg">-0.43U</div>
+          <div style="font-size:10px;color:var(--muted);text-align:right">-0.19%</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;padding-top:12px;color:var(--muted);font-size:11px">
+      以上為範例數據，連接後顯示真實持倉
+    </div>
+  </div>
+ 
+  <button class="btn btn-outline" onclick="showToast('🔄 正在刷新持倉...')">🔄 刷新持倉</button>
+</div>
+ 
+<!-- ═══════════════════════════════ 訊號 ═══════════════════════════════ -->
+<div id="page-signals" class="page">
+  <div class="card">
+    <div class="card-title">最新訊號</div>
+ 
+    <div class="signal-item">
+      <div class="signal-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="pos-badge long">LONG</div>
+          <div class="signal-sym">SOLUSDT</div>
+        </div>
+        <div class="signal-time">今天 14:23</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-col">
+          <div class="signal-kv">進場 <span>148.52</span></div>
+          <div class="signal-kv">TP1 <span style="color:var(--green)">151.20</span></div>
+          <div class="signal-kv">TP2 <span style="color:var(--green)">154.80</span></div>
+          <div class="signal-kv">SL <span style="color:var(--red)">145.80</span></div>
+        </div>
+        <div class="signal-col">
+          <div class="signal-kv">機率 <span style="color:var(--gold)">75%</span></div>
+          <div class="signal-kv">分數 <span>4/6</span></div>
+          <div class="signal-kv">相關 <span>0.856</span></div>
+          <div class="signal-kv">槓桿 <span>10x</span></div>
+        </div>
+      </div>
+      <div class="prob-bar"><div class="prob-fill" style="width:75%"></div></div>
+    </div>
+ 
+    <div class="signal-item">
+      <div class="signal-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="pos-badge short">SHORT</div>
+          <div class="signal-sym">ETHUSDT</div>
+        </div>
+        <div class="signal-time">今天 13:47</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-col">
+          <div class="signal-kv">進場 <span>2318.40</span></div>
+          <div class="signal-kv">TP1 <span style="color:var(--green)">2285.00</span></div>
+          <div class="signal-kv">TP2 <span style="color:var(--green)">2250.00</span></div>
+          <div class="signal-kv">SL <span style="color:var(--red)">2355.00</span></div>
+        </div>
+        <div class="signal-col">
+          <div class="signal-kv">機率 <span style="color:var(--gold)">70%</span></div>
+          <div class="signal-kv">分數 <span>3/6</span></div>
+          <div class="signal-kv">相關 <span>0.923</span></div>
+          <div class="signal-kv">槓桿 <span>10x</span></div>
+        </div>
+      </div>
+      <div class="prob-bar"><div class="prob-fill" style="width:70%"></div></div>
+    </div>
+ 
+    <div style="text-align:center;padding-top:12px;color:var(--muted);font-size:11px">
+      以上為範例數據，連接後顯示真實訊號
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══════════════════════════════ 設定 ═══════════════════════════════ -->
+<div id="page-settings" class="page">
+ 
+  <!-- 交易方向 -->
+  <div class="card">
+    <div class="card-title">開單方向</div>
+    <div class="dir-selector">
+      <div class="dir-btn" onclick="setDir('long')" id="dir-long">🟢 只做多</div>
+      <div class="dir-btn active-both" onclick="setDir('both')" id="dir-both">⚡ 多空</div>
+      <div class="dir-btn" onclick="setDir('short')" id="dir-short">🔴 只做空</div>
+    </div>
+  </div>
+ 
+  <!-- 交易參數 -->
+  <div class="card">
+    <div class="card-title">交易參數</div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">槓桿倍數</div>
+        <div class="set-sub">目前設定</div>
+      </div>
+      <div class="set-val" onclick="showToast('⚙️ 槓桿設定請至 TG 指令操作')">10x</div>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">每單保證金</div>
+        <div class="set-sub">固定金額</div>
+      </div>
+      <div class="set-val" onclick="showToast('⚙️ 保證金設定請至 TG 指令操作')">5U</div>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">出場模式</div>
+        <div class="set-sub">TP12 = 半倉TP1 + 半倉TP2</div>
+      </div>
+      <div class="set-val" onclick="showToast('⚙️ 模式設定請至 TG 指令操作')">TP12</div>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">最大持倉數</div>
+        <div class="set-sub">同時開倉上限</div>
+      </div>
+      <div class="set-val">10</div>
+    </div>
+  </div>
+ 
+  <!-- 開關 -->
+  <div class="card">
+    <div class="card-title">系統開關</div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">自動交易</div>
+        <div class="set-sub">開啟後自動執行訊號</div>
+      </div>
+      <div class="toggle" id="toggle-trade" onclick="toggleSwitch('trade')"></div>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">訊號記錄</div>
+        <div class="set-sub">自動寫入 CSV</div>
+      </div>
+      <div class="toggle on" id="toggle-signal" onclick="toggleSwitch('signal')"></div>
+    </div>
+    <div class="set-row">
+      <div>
+        <div class="set-label">訊號反指標</div>
+        <div class="set-sub">空單反向做多</div>
+      </div>
+      <div class="toggle on" id="toggle-reverse" onclick="toggleSwitch('reverse')"></div>
+    </div>
+  </div>
+ 
+  <div style="text-align:center;color:var(--muted);font-size:11px;padding:8px 0 20px">
+    設定變更請至 TG 指令 /tradeset 操作<br>此頁面僅供查看
+  </div>
+ 
+</div>
+ 
+<!-- 底部導航 -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')">
+    <div class="nav-icon">📊</div>總覽
+  </div>
+  <div class="nav-item" id="nav-positions" onclick="switchTab('positions')">
+    <div class="nav-icon">📋</div>持倉
+  </div>
+  <div class="nav-item" id="nav-signals" onclick="switchTab('signals')">
+    <div class="nav-icon">💡</div>訊號
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+    <div class="nav-icon">⚙️</div>設定
+  </div>
+</div>
+ 
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+ 
+<script>
+  // TG Web App 初始化
+  if (window.Telegram && window.Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+ 
+  // ── 頁籤切換 ──
+  function switchTab(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active');
+    const tabs = ['overview','positions','signals','settings'];
+    document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  }
+ 
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+ 
+  // ── 方向選擇 ──
+  let currentDir = 'both';
+  function setDir(dir) {
+    currentDir = dir;
+    document.getElementById('dir-long').className  = 'dir-btn';
+    document.getElementById('dir-both').className  = 'dir-btn';
+    document.getElementById('dir-short').className = 'dir-btn';
+    if (dir === 'long')  document.getElementById('dir-long').className  = 'dir-btn active-long';
+    if (dir === 'both')  document.getElementById('dir-both').className  = 'dir-btn active-both';
+    if (dir === 'short') document.getElementById('dir-short').className = 'dir-btn active-short';
+    const label = dir === 'long' ? '只開多單' : dir === 'short' ? '只開空單' : '多空都開';
+    showToast('⚙️ 設定請至 TG /tradeset 操作');
+  }
+ 
+  // ── 開關 ──
+  const toggleStates = { trade: false, signal: true, reverse: true };
+  function toggleSwitch(name) {
+    toggleStates[name] = !toggleStates[name];
+    const el = document.getElementById('toggle-' + name);
+    el.classList.toggle('on', toggleStates[name]);
+    showToast('⚙️ 設定請至 TG /tradeset 操作');
+  }
+ 
+  // ── 模擬 BTC 價格微動 ──
+  let btcBase = 103500;
+  setInterval(() => {
+    btcBase += (Math.random() - 0.5) * 200;
+    btcBase = Math.max(100000, Math.min(110000, btcBase));
+    document.getElementById('btc-price').textContent = Math.round(btcBase).toLocaleString();
+  }, 3000);
+</script>
 </body>
 </html>
